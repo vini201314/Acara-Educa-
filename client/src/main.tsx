@@ -21,6 +21,43 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
   startLogin();
 };
 
+async function fetchJsonOnly(input: RequestInfo | URL, init?: RequestInit) {
+  const response = await globalThis.fetch(input, init);
+  const body = await response.text();
+  const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
+
+  let payload: unknown;
+  try {
+    payload = body ? JSON.parse(body) : null;
+  } catch {
+    const message = response.status >= 500
+      ? "O servidor está temporariamente indisponível. Tente novamente em instantes."
+      : "A resposta da API foi inválida. Tente novamente.";
+    throw new Error(message);
+  }
+
+  if (!contentType.includes("application/json")) {
+    throw new Error("A API retornou uma resposta inesperada. Tente novamente.");
+  }
+
+  if (!response.ok) {
+    const candidate = (payload as any)?.error?.json?.message
+      ?? (payload as any)?.error?.message
+      ?? (payload as any)?.message;
+    throw new Error(
+      typeof candidate === "string" && candidate.length > 0
+        ? candidate
+        : "Não foi possível concluir a solicitação. Tente novamente."
+    );
+  }
+
+  return new Response(body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers,
+  });
+}
+
 queryClient.getQueryCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.query.state.error;
@@ -62,8 +99,8 @@ const trpcClient = trpc.createClient({
         }
         return {};
       },
-      fetch(input, init) {
-        return globalThis.fetch(input, {
+      async fetch(input, init) {
+        return fetchJsonOnly(input, {
           ...(init ?? {}),
           credentials: "include",
         });

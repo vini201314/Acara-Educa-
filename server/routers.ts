@@ -16,6 +16,35 @@ import * as db from "./db";
 import { verifyPassword } from "./password";
 import { storagePut } from "./storage";
 
+function getRegistrationErrorMessage(error: unknown): string {
+  const raw = error instanceof Error ? error.message : String(error);
+  const normalized = raw.toLowerCase();
+
+  if (normalized.includes("database_url") || normalized.includes("database client")) {
+    return "O banco de dados de produção não está configurado. Verifique DATABASE_URL no Vercel.";
+  }
+
+  if (
+    normalized.includes("unknown column") ||
+    normalized.includes("doesn't exist") ||
+    normalized.includes("no such table") ||
+    normalized.includes("table '" )
+  ) {
+    return "O banco de dados de produção está sem as migrations do Acaraú Educa+.";
+  }
+
+  if (
+    normalized.includes("econnrefused") ||
+    normalized.includes("etimedout") ||
+    normalized.includes("enotfound") ||
+    normalized.includes("connect")
+  ) {
+    return "O banco de dados de produção não está acessível pelo Vercel. Verifique o host, SSL e allowlist de IPs.";
+  }
+
+  return "Não foi possível criar a conta no banco de dados de produção.";
+}
+
 export const appRouter = router({
   system: systemRouter,
 
@@ -76,30 +105,42 @@ export const appRouter = router({
           });
         }
 
-        const user = await db.createUser({
-          name: trimmedName,
-          password: input.password,
-        });
+        try {
+          const user = await db.createUser({
+            name: trimmedName,
+            password: input.password,
+          });
 
-        // Cria o token de sessão JWT assinado
-        const sessionToken = await sdk.createSessionToken(user.openId, {
-          name: user.name,
-        });
-
-        const cookieOptions = getSessionCookieOptions(ctx.req);
-        ctx.res.cookie(COOKIE_NAME, sessionToken, cookieOptions);
-
-        return {
-          success: true,
-          user: {
-            id: user.id,
-            studentCode: user.studentCode,
+          // Cria o token de sessão JWT assinado
+          const sessionToken = await sdk.createSessionToken(user.openId, {
             name: user.name,
-            role: user.role,
-            isGeneralAdmin: user.isGeneralAdmin,
-            createdAt: user.createdAt,
-          },
-        };
+          });
+
+          const cookieOptions = getSessionCookieOptions(ctx.req);
+          ctx.res.cookie(COOKIE_NAME, sessionToken, cookieOptions);
+
+          return {
+            success: true,
+            user: {
+              id: user.id,
+              studentCode: user.studentCode,
+              name: user.name,
+              role: user.role,
+              isGeneralAdmin: user.isGeneralAdmin,
+              createdAt: user.createdAt,
+            },
+          };
+        } catch (error) {
+          console.error("[Auth] Registration failed", {
+            name: trimmedName,
+            error,
+          });
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: getRegistrationErrorMessage(error),
+            cause: error,
+          });
+        }
       }),
 
     login: publicProcedure
