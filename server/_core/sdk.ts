@@ -295,9 +295,9 @@ class SDKServer {
         const userInfo = await this.getUserInfoWithJwt(sessionToken ?? "");
         await db.upsertUser({
           openId: userInfo.openId,
-          name: userInfo.name || null,
+          name: userInfo.name || undefined,
           email: userInfo.email ?? null,
-          loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
+          loginMethod: userInfo.loginMethod ?? userInfo.platform ?? undefined,
           lastSignedIn: signedInAt,
         });
         user = await db.getUserByOpenId(userInfo.openId);
@@ -334,17 +334,20 @@ function buildCronUser(
   const now = new Date();
   return {
     id: -1,
+    studentCode: "#000",
+    passwordHash: "",
     openId: userInfo.openId,
     name: userInfo.name || "Manus Scheduled Task",
     email: null,
-    loginMethod: null,
+    loginMethod: "cron",
     role: "user",
+    isGeneralAdmin: false,
     createdAt: now,
     updatedAt: now,
     lastSignedIn: now,
     taskUid: userInfo.taskUid ?? undefined,
     isCron: true,
-  } as AuthenticatedUser;
+  } as unknown as AuthenticatedUser;
 }
 
 export const sdk = new SDKServer();
