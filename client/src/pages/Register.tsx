@@ -88,7 +88,7 @@ export default function Register() {
                 Criar conta de Aluno
               </h1>
               <p className="text-slate-500 text-sm mt-1.5">
-                Cadastre-se para receber seu ID único (#001, #002...) e registrar seu progresso
+                Cadastre-se para receber seu ID único e registrar seu progresso
               </p>
             </div>
 
@@ -164,7 +164,7 @@ export default function Register() {
               <div className="p-3 bg-slate-50 rounded-xl text-xs text-slate-500 space-y-1 border border-slate-100">
                 <p className="flex items-center gap-1.5 font-medium text-slate-700">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  ID único gerado automaticamente (#001, #002...)
+                  ID único gerado automaticamente
                 </p>
                 <p className="flex items-center gap-1.5 font-medium text-slate-700">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />

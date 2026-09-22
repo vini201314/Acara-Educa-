@@ -13,7 +13,6 @@ import {
   User,
   ArrowRight,
   AlertCircle,
-  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -99,7 +98,7 @@ export default function Login() {
                   <Input
                     id="name"
                     type="text"
-                    placeholder="Ex: Paulo Vinicius do Nascimento Santos"
+                    placeholder="Digite seu nome completo"
                     value={name}
                     onChange={e => setName(e.target.value)}
                     className="pl-11 h-12 rounded-xl border-slate-200 focus-visible:ring-emerald-500 text-sm"
@@ -147,16 +146,6 @@ export default function Login() {
                 )}
               </Button>
             </form>
-
-            {/* Dica de Acesso Geral */}
-            <div className="mt-6 p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-amber-900 text-xs">
-              <span className="font-bold block mb-0.5 flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5 text-amber-600" /> Administrador Inicial configurado
-              </span>
-              <span>
-                Para acessar como administrador geral, use o nome <strong>Paulo Vinicius do Nascimento Santos</strong> e a senha padrão <strong>vini2013.</strong>
-              </span>
-            </div>
 
             {/* Link para Cadastro */}
             <div className="mt-8 pt-6 border-t border-slate-100 text-center">
