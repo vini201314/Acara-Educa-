@@ -1,10 +1,11 @@
 import { and, desc, eq, inArray, like, or, sql } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
 import { getDb } from "./db";
 import { classContentCompletions, classContents, classInvites, classMembers, classes, quizQuestions, users, type ClassContent, type Classroom, type ClassInvite, type QuizQuestion, type User } from "../drizzle/schema";
 
 export async function createClassroom(data: { teacherId: number; name: string; subject: string; schoolYear: string; className: string; shift: string }): Promise<Classroom> {
   const db = await getDb(); if (!db) throw new Error("Banco de dados indisponível");
-  await db.insert(classes).values(data);
+  await db.insert(classes).values({ ...data, joinCode: randomUUID().replace(/-/g, "") });
   const row = await db.select().from(classes).where(and(eq(classes.teacherId, data.teacherId), eq(classes.name, data.name))).orderBy(desc(classes.id)).limit(1);
   return row[0]!;
 }
@@ -16,12 +17,26 @@ export async function listTeacherClasses(teacherId: number): Promise<Classroom[]
 
 export async function listStudentClasses(studentId: number): Promise<(Classroom & { teacherName: string })[]> {
   const db = await getDb(); if (!db) return [];
-  return db.select({ id: classes.id, teacherId: classes.teacherId, name: classes.name, subject: classes.subject, schoolYear: classes.schoolYear, className: classes.className, shift: classes.shift, createdAt: classes.createdAt, updatedAt: classes.updatedAt, teacherName: users.name }).from(classMembers).innerJoin(classes, eq(classMembers.classId, classes.id)).innerJoin(users, eq(classes.teacherId, users.id)).where(eq(classMembers.studentId, studentId)).orderBy(desc(classes.createdAt));
+  return db.select({ id: classes.id, teacherId: classes.teacherId, name: classes.name, subject: classes.subject, schoolYear: classes.schoolYear, className: classes.className, shift: classes.shift, joinCode: classes.joinCode, createdAt: classes.createdAt, updatedAt: classes.updatedAt, teacherName: users.name }).from(classMembers).innerJoin(classes, eq(classMembers.classId, classes.id)).innerJoin(users, eq(classes.teacherId, users.id)).where(eq(classMembers.studentId, studentId)).orderBy(desc(classes.createdAt));
 }
 
 export async function getClassroom(classId: number): Promise<Classroom | undefined> {
   const db = await getDb(); if (!db) return undefined;
-  return (await db.select().from(classes).where(eq(classes.id, classId)).limit(1))[0];
+  const row = (await db.select().from(classes).where(eq(classes.id, classId)).limit(1))[0];
+  if (row && !row.joinCode) {
+    const joinCode = randomUUID().replace(/-/g, "");
+    await db.update(classes).set({ joinCode }).where(eq(classes.id, classId));
+    row.joinCode = joinCode;
+  }
+  return row;
+}
+
+export async function joinClassByCode(joinCode: string, studentId: number): Promise<Classroom> {
+  const db = await getDb(); if (!db) throw new Error("Banco de dados indisponível");
+  const classroom = (await db.select().from(classes).where(eq(classes.joinCode, joinCode.trim())).limit(1))[0];
+  if (!classroom) throw new Error("Link de entrada inválido ou expirado.");
+  if (!(await isMemberOfClass(classroom.id, studentId))) await db.insert(classMembers).values({ classId: classroom.id, studentId });
+  return classroom;
 }
 
 export async function isTeacherOfClass(classId: number, teacherId: number): Promise<boolean> {

@@ -55,7 +55,7 @@ export default function VideoDetailPage() {
   };
 
   // Processa URL de vídeo para embeds compatíveis (YouTube, etc)
-  const getEmbedInfo = (url: string) => {
+  const getEmbedInfo = (url: string, sourceType: string) => {
     if (!url) return { type: "unknown", src: url };
 
     // YouTube watch ou short
@@ -68,6 +68,11 @@ export default function VideoDetailPage() {
         type: "youtube",
         src: `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=0&rel=0`,
       };
+    }
+
+    // Arquivo enviado ao storage: usar HTML5 mesmo que o proxy não exponha extensão.
+    if (sourceType === "file") {
+      return { type: "html5", src: url };
     }
 
     // Arquivo direto ou /manus-storage/
@@ -118,7 +123,7 @@ export default function VideoDetailPage() {
     );
   }
 
-  const embed = getEmbedInfo(video.videoUrl);
+  const embed = getEmbedInfo(video.videoUrl, video.sourceType);
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">

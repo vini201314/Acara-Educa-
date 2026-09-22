@@ -362,6 +362,7 @@ export const appRouter = router({
           subject: z.string().min(1),
           sourceType: z.enum(["url", "file"]),
           videoUrl: z.string().min(1),
+          fileKey: z.string().optional().nullable(),
           thumbnailUrl: z.string().optional().nullable(),
         })
       )
@@ -372,6 +373,7 @@ export const appRouter = router({
           subject: input.subject,
           sourceType: input.sourceType,
           videoUrl: input.videoUrl.trim(),
+          fileKey: input.fileKey ?? null,
           thumbnailUrl: input.thumbnailUrl?.trim() || null,
         });
 
@@ -395,8 +397,12 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
+        if (!input.contentType.startsWith("video/")) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "O arquivo precisa ser um vídeo válido." });
+        }
         const buffer = Buffer.from(input.base64Data, "base64");
-        const keyPrefix = `video-uploads/admin_${ctx.user.id}/${Date.now()}_${input.fileName}`;
+        const safeName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const keyPrefix = `video-uploads/admin_${ctx.user.id}/${Date.now()}_${safeName}`;
 
         const uploadResult = await storagePut(
           keyPrefix,

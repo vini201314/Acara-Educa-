@@ -18,7 +18,7 @@ export const watchedVideos = mysqlTable("watched_videos", { id: int("id").autoin
 export type WatchedVideo = typeof watchedVideos.$inferSelect;
 export type InsertWatchedVideo = typeof watchedVideos.$inferInsert;
 
-export const classes = mysqlTable("classes", { id: int("id").autoincrement().primaryKey(), teacherId: int("teacherId").notNull(), name: varchar("name", { length: 191 }).notNull(), subject: varchar("subject", { length: 64 }).notNull(), schoolYear: varchar("schoolYear", { length: 32 }).notNull(), className: varchar("className", { length: 32 }).notNull(), shift: varchar("shift", { length: 32 }).notNull(), createdAt: timestamp("createdAt").defaultNow().notNull(), updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull() });
+export const classes = mysqlTable("classes", { id: int("id").autoincrement().primaryKey(), teacherId: int("teacherId").notNull(), name: varchar("name", { length: 191 }).notNull(), subject: varchar("subject", { length: 64 }).notNull(), schoolYear: varchar("schoolYear", { length: 32 }).notNull(), className: varchar("className", { length: 32 }).notNull(), shift: varchar("shift", { length: 32 }).notNull(), joinCode: varchar("joinCode", { length: 64 }), createdAt: timestamp("createdAt").defaultNow().notNull(), updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull() });
 export type Classroom = typeof classes.$inferSelect;
 export type InsertClassroom = typeof classes.$inferInsert;
 export const classMembers = mysqlTable("class_members", { id: int("id").autoincrement().primaryKey(), classId: int("classId").notNull(), studentId: int("studentId").notNull(), joinedAt: timestamp("joinedAt").defaultNow().notNull() });

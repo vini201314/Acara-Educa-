@@ -66,6 +66,7 @@ export default function AdminDashboard() {
   const [videoDescription, setVideoDescription] = useState("");
   const [videoSubject, setVideoSubject] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
+  const [videoFileKey, setVideoFileKey] = useState<string | undefined>(undefined);
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
@@ -166,6 +167,7 @@ export default function AdminDashboard() {
     setVideoDescription("");
     setVideoSubject("");
     setVideoUrl("");
+    setVideoFileKey(undefined);
     setThumbnailUrl("");
     setUploadProgress(null);
     setIsUploading(false);
@@ -179,6 +181,7 @@ export default function AdminDashboard() {
     setVideoDescription(video.description);
     setVideoSubject(video.subject);
     setVideoUrl(video.videoUrl);
+    setVideoFileKey(video.fileKey || undefined);
     setThumbnailUrl(video.thumbnailUrl || "");
     setUploadProgress(null);
     setIsUploading(false);
@@ -226,6 +229,7 @@ export default function AdminDashboard() {
     }
 
     setIsUploading(true);
+    setSourceType("file");
     setUploadProgress(15);
 
     try {
@@ -250,6 +254,7 @@ export default function AdminDashboard() {
           });
 
           setVideoUrl(res.url);
+          setVideoFileKey(res.key);
           setUploadProgress(100);
           toast.success("Upload do arquivo concluído com sucesso!");
         } catch (err: any) {
@@ -300,6 +305,7 @@ export default function AdminDashboard() {
         subject: videoSubject,
         sourceType,
         videoUrl: videoUrl.trim(),
+        fileKey: videoFileKey,
         thumbnailUrl: thumbnailUrl.trim() || null,
       });
     } else {
@@ -309,6 +315,7 @@ export default function AdminDashboard() {
         subject: videoSubject,
         sourceType,
         videoUrl: videoUrl.trim(),
+        fileKey: videoFileKey,
         thumbnailUrl: thumbnailUrl.trim() || undefined,
       });
     }

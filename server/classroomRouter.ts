@@ -14,6 +14,11 @@ export const classroomRouter = router({
     return cdb.listTeacherClasses(ctx.user.id);
   }),
   create: teacherProcedure.input(classInput).mutation(({ input, ctx }) => cdb.createClassroom({ ...input, teacherId: ctx.user.id })),
+  joinByCode: protectedProcedure.input(z.object({ joinCode: z.string().min(8) })).mutation(async ({ input, ctx }) => {
+    if (ctx.user.role !== "user") throw new TRPCError({ code: "FORBIDDEN", message: "A entrada por link é destinada aos alunos." });
+    const classroom = await cdb.joinClassByCode(input.joinCode, ctx.user.id);
+    return { success: true, classroom };
+  }),
   get: protectedProcedure.input(z.object({ classId: z.number().int().positive() })).query(async ({ input, ctx }) => {
     const classroom = await cdb.getClassroom(input.classId);
     if (!classroom) throw new TRPCError({ code: "NOT_FOUND", message: "Classe não encontrada." });
