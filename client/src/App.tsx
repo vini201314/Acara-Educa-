@@ -14,6 +14,7 @@ import ProfilePage from "./pages/ProfilePage";
 import AboutPage from "./pages/AboutPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
+import ClassroomPage from "./pages/ClassroomPage";
 
 function Router() {
   return (
@@ -28,6 +29,8 @@ function Router() {
       {/* Área de Vídeos */}
       <Route path="/videos" component={VideosPage} />
       <Route path="/videos/:id" component={VideoDetailPage} />
+
+      <Route path="/classes" component={ClassroomPage} />
 
       {/* Sugestões do Aluno */}
       <Route path="/sugestoes" component={SuggestionsPage} />

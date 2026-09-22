@@ -67,11 +67,13 @@ export default function AdminDashboard() {
   const [videoSubject, setVideoSubject] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [thumbnailUrl, setThumbnailUrl] = useState("");
+  const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
   // Estado para Adicionar Administrador por ID
   const [newAdminCode, setNewAdminCode] = useState("");
+  const [newAdminRole, setNewAdminRole] = useState<"admin" | "teacher">("admin");
 
   // Queries
   const { data: user, isLoading: loadingAuth } = trpc.auth.me.useQuery();
@@ -117,6 +119,7 @@ export default function AdminDashboard() {
   });
 
   const uploadFileMutation = trpc.admin.uploadVideoFile.useMutation();
+  const uploadThumbnailMutation = trpc.admin.uploadVideoThumbnail.useMutation();
 
   const markReviewedMutation = trpc.admin.markSuggestionReviewed.useMutation({
     onSuccess: () => {
@@ -141,9 +144,7 @@ export default function AdminDashboard() {
       utils.admin.listAdmins.invalidate();
       utils.admin.stats.invalidate();
       setNewAdminCode("");
-      toast.success(
-        `O usuário ${data.user.name} (${data.user.studentCode}) agora é Administrador!`
-      );
+      toast.success(`O usuário ${data.user.name} (${data.user.studentCode}) agora é ${newAdminRole === "teacher" ? "Professor" : "Administrador"}!`);
     },
     onError: err => toast.error(err.message || "Erro ao promover usuário."),
   });
@@ -187,6 +188,31 @@ export default function AdminDashboard() {
   const closeVideoModal = () => {
     setVideoModalOpen(false);
     setEditingVideoId(null);
+  };
+
+  const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      toast.error("A capa deve ser JPG, PNG ou WEBP.");
+      return;
+    }
+    setThumbnailUploading(true);
+    try {
+      const base64Data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
+        reader.onerror = () => reject(new Error("Não foi possível ler a capa."));
+        reader.readAsDataURL(file);
+      });
+      const result = await uploadThumbnailMutation.mutateAsync({ fileName: file.name, contentType: file.type, base64Data });
+      setThumbnailUrl(result.url);
+      toast.success("Capa enviada com sucesso!");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Falha ao enviar a capa.");
+    } finally {
+      setThumbnailUploading(false);
+    }
   };
 
   // Upload de Arquivo de Vídeo
@@ -662,7 +688,7 @@ export default function AdminDashboard() {
                     </h2>
                   </div>
                   <p className="text-slate-600 text-sm">
-                    Como Administrador Geral, você pode promover qualquer aluno a administrador inserindo o ID único (exemplo: <strong>#002</strong>).
+                      Como Administrador Geral, você pode promover qualquer aluno a professor ou administrador inserindo o ID único (exemplo: <strong>#002</strong>).
                   </p>
 
                   <form
@@ -672,7 +698,7 @@ export default function AdminDashboard() {
                         toast.error("Informe o ID do aluno.");
                         return;
                       }
-                      addAdminMutation.mutate({ studentCode: newAdminCode.trim() });
+                      addAdminMutation.mutate({ studentCode: newAdminCode.trim(), role: newAdminRole });
                     }}
                     className="flex flex-col sm:flex-row gap-3 max-w-md"
                   >
@@ -683,12 +709,20 @@ export default function AdminDashboard() {
                       onChange={e => setNewAdminCode(e.target.value)}
                       className="h-11 rounded-xl text-sm"
                     />
+                    <select
+                      value={newAdminRole}
+                      onChange={e => setNewAdminRole(e.target.value as "admin" | "teacher")}
+                      className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm"
+                    >
+                      <option value="teacher">Professor</option>
+                      <option value="admin">Administrador</option>
+                    </select>
                     <Button
                       type="submit"
                       disabled={addAdminMutation.isPending}
                       className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl shrink-0"
                     >
-                      {addAdminMutation.isPending ? "Adicionando..." : "Promover a Administrador"}
+                      {addAdminMutation.isPending ? "Adicionando..." : "Promover cargo"}
                     </Button>
                   </form>
                 </div>
@@ -896,15 +930,30 @@ export default function AdminDashboard() {
               </Select>
             </div>
 
-            {/* Miniatura URL (opcional) */}
+            {/* Miniatura por arquivo ou URL opcional */}
             <div className="space-y-1.5">
               <Label htmlFor="vthumb" className="text-xs font-bold text-slate-700">
-                URL da Miniatura / Capa (Opcional)
+                Capa da videoaula (JPG, PNG ou WEBP)
               </Label>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleThumbnailUpload}
+                disabled={thumbnailUploading}
+                className="block w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-600 cursor-pointer"
+              />
+              {thumbnailUploading && <p className="text-xs text-amber-700 font-semibold">Enviando capa...</p>}
+              {thumbnailUrl && (
+                <div className="flex items-center gap-3 mt-2">
+                  <img src={thumbnailUrl} alt="Prévia da capa" className="w-24 h-14 object-cover rounded-lg border border-slate-200" />
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setThumbnailUrl("")} className="text-rose-600 rounded-lg">Remover capa</Button>
+                </div>
+              )}
+              <p className="text-[11px] text-slate-400">Também é possível colar uma URL abaixo.</p>
               <Input
                 id="vthumb"
                 type="url"
-                placeholder="https://images.unsplash.com/..."
+                placeholder="https://... (opcional)"
                 value={thumbnailUrl}
                 onChange={e => setThumbnailUrl(e.target.value)}
                 className="h-11 rounded-xl text-sm"

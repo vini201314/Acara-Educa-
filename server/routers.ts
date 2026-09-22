@@ -15,6 +15,7 @@ import {
 import * as db from "./db";
 import { verifyPassword } from "./password";
 import { storagePut } from "./storage";
+import { classroomRouter } from "./classroomRouter";
 
 function getRegistrationErrorMessage(error: unknown): string {
   const raw = error instanceof Error ? error.message : String(error);
@@ -47,6 +48,7 @@ function getRegistrationErrorMessage(error: unknown): string {
 
 export const appRouter = router({
   system: systemRouter,
+  classrooms: classroomRouter,
 
   // ----------------- AUTENTICAÇÃO REAL (NOME + SENHA HASH) -----------------
   auth: router({
@@ -409,6 +411,21 @@ export const appRouter = router({
         };
       }),
 
+    uploadVideoThumbnail: adminProcedure
+      .input(z.object({ fileName: z.string(), contentType: z.string(), base64Data: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!["image/jpeg", "image/png", "image/webp"].includes(input.contentType)) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "A capa deve ser JPG, PNG ou WEBP." });
+        }
+        const safeName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const result = await storagePut(
+          `video-thumbnails/admin_${ctx.user.id}/${Date.now()}_${safeName}`,
+          Buffer.from(input.base64Data, "base64"),
+          input.contentType,
+        );
+        return { success: true, ...result };
+      }),
+
     // Gestão de Sugestões
     listSuggestions: adminProcedure.query(async () => {
       return db.listSuggestions();
@@ -445,6 +462,7 @@ export const appRouter = router({
       .input(
         z.object({
           studentCode: z.string().min(1, "Informe o ID do aluno (ex: #002)"),
+          role: z.enum(["admin", "teacher"]).default("admin"),
         })
       )
       .mutation(async ({ input }) => {
@@ -470,7 +488,7 @@ export const appRouter = router({
 
         const updated = await db.setUserRole({
           targetUserId: targetUser.id,
-          newRole: "admin",
+          newRole: input.role,
         });
 
         return {

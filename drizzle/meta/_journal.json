@@ -15,6 +15,13 @@
       "when": 1789920661870,
       "tag": "0001_majestic_ted_forrester",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1790036590592,
+      "tag": "0002_chunky_galactus",
+      "breakpoints": true
     }
   ]
 }

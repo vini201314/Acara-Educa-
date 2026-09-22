@@ -221,7 +221,7 @@ export async function listAllUsers(): Promise<User[]> {
 
 export async function setUserRole(params: {
   targetUserId: number;
-  newRole: "user" | "admin";
+  newRole: "user" | "teacher" | "admin";
 }): Promise<User> {
   const db = await getDb();
   if (!db) throw new Error("Banco de dados indisponível");

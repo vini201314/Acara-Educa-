@@ -41,6 +41,7 @@ export default function Navbar() {
   const navLinks = [
     { href: "/", label: "Início", icon: BookOpen },
     { href: "/videos", label: "Vídeos", icon: Video },
+    { href: "/classes", label: "Minhas Classes", icon: GraduationCap },
     { href: "/sugestoes", label: "Sugestões", icon: Lightbulb },
     { href: "/sobre", label: "Sobre o Projeto", icon: Info },
   ];
