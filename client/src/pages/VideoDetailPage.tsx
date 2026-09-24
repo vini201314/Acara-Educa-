@@ -20,6 +20,7 @@ import { toast } from "sonner";
 export default function VideoDetailPage() {
   const [, params] = useRoute("/videos/:id");
   const videoId = params?.id ? parseInt(params.id, 10) : 0;
+  const [mediaError, setMediaError] = useState(false);
 
   const utils = trpc.useUtils();
   const { data: user } = trpc.auth.me.useQuery();
@@ -154,15 +155,40 @@ export default function VideoDetailPage() {
                   allowFullScreen
                 />
               ) : embed.type === "html5" ? (
-                <video
-                  src={embed.src}
-                  controls
-                  controlsList="nodownload"
-                  className="w-full h-full object-contain"
-                  poster={video.thumbnailUrl || undefined}
-                >
-                  Seu navegador não suporta reprodução de vídeo HTML5.
-                </video>
+                <div className="relative w-full h-full">
+                  <video
+                    key={embed.src}
+                    controls
+                    controlsList="nodownload"
+                    preload="metadata"
+                    playsInline
+                    className="w-full h-full object-contain"
+                    poster={video.thumbnailUrl || undefined}
+                    onLoadedMetadata={() => setMediaError(false)}
+                    onError={() => setMediaError(true)}
+                  >
+                    <source
+                      src={embed.src}
+                      type={video.sourceType === "file"
+                        ? video.fileKey?.toLowerCase().endsWith(".webm")
+                          ? "video/webm"
+                          : (video.fileKey?.toLowerCase().endsWith(".ogg") || video.fileKey?.toLowerCase().endsWith(".ogv"))
+                            ? "video/ogg"
+                            : "video/mp4"
+                        : undefined}
+                    />
+                    Seu navegador não suporta reprodução de vídeo HTML5.
+                  </video>
+                  {mediaError && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-slate-950/95 p-5 text-center text-white">
+                      <div className="space-y-3">
+                        <Video className="mx-auto h-10 w-10 text-amber-400" />
+                        <p className="text-sm">Não foi possível carregar este vídeo neste momento.</p>
+                        <a href={embed.src} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center rounded-xl bg-emerald-600 px-4 text-sm font-bold text-white">Abrir arquivo</a>
+                      </div>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="p-8 text-center text-white space-y-4">
                   <Play className="w-12 h-12 mx-auto text-emerald-400" />

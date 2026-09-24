@@ -14,7 +14,7 @@ import {
 } from "./_core/trpc";
 import * as db from "./db";
 import { verifyPassword } from "./password";
-import { storagePut } from "./storage";
+import { storageGetSignedUrl, storagePut } from "./storage";
 import { classroomRouter } from "./classroomRouter";
 
 function getRegistrationErrorMessage(error: unknown): string {
@@ -251,8 +251,18 @@ export const appRouter = router({
           isWatched = watchedIds.includes(video.id);
         }
 
+        // For uploaded files, let the browser talk directly to the signed
+        // object URL. This preserves native MP4 Range/206 streaming on mobile
+        // and avoids buffering the whole object through the app serverless
+        // function. The /manus-storage URL remains the fallback for older
+        // clients and catalog records.
+        const playableVideoUrl = video.sourceType === "file" && video.fileKey
+          ? await storageGetSignedUrl(video.fileKey)
+          : video.videoUrl;
+
         return {
           ...video,
+          videoUrl: playableVideoUrl,
           isWatched,
         };
       }),
