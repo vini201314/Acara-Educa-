@@ -804,8 +804,8 @@ export default function AdminDashboard() {
       {/* MODAL DE ADICIONAR / EDITAR VÍDEO CONFORME BRIEFING:
           Seletor visual: Como adicionar o vídeo? 🔗 Usar URL | 📁 Enviar arquivo */}
       <Dialog open={videoModalOpen} onOpenChange={setVideoModalOpen}>
-        <DialogContent className="max-w-2xl bg-white rounded-3xl p-6 sm:p-8">
-          <DialogHeader className="mb-4">
+        <DialogContent className="top-2 translate-y-0 sm:top-[50%] sm:translate-y-[-50%] w-[calc(100vw-1rem)] max-w-2xl max-h-[calc(100dvh-1rem)] overflow-y-auto overscroll-contain touch-pan-y bg-white rounded-3xl p-4 sm:p-8">
+          <DialogHeader className="mb-4 pr-8">
             <DialogTitle className="text-2xl font-bold text-slate-900">
               {editingVideoId ? "Editar Videoaula" : "Adicionar Nova Videoaula"}
             </DialogTitle>
@@ -814,7 +814,7 @@ export default function AdminDashboard() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSaveVideo} className="space-y-4">
+          <form onSubmit={handleSaveVideo} className="space-y-4 pb-1">
             {/* Seletor Visual Obrigatório conforme briefing:
                 Como adicionar o vídeo? 🔗 Usar URL | 📁 Enviar arquivo */}
             <div className="space-y-2">
@@ -984,12 +984,12 @@ export default function AdminDashboard() {
             </div>
 
             {/* Botões do Formulário */}
-            <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+            <div className="sticky bottom-0 z-10 -mx-4 sm:-mx-8 px-4 sm:px-8 pt-4 pb-1 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3 border-t border-slate-100 bg-white/95 backdrop-blur">
               <Button
                 type="button"
                 variant="outline"
                 onClick={closeVideoModal}
-                className="rounded-xl"
+                className="min-h-11 w-full sm:w-auto rounded-xl"
               >
                 Cancelar
               </Button>
@@ -1000,7 +1000,7 @@ export default function AdminDashboard() {
                   updateVideoMutation.isPending ||
                   isUploading
                 }
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl"
+                className="min-h-11 w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl"
               >
                 {editingVideoId ? "Salvar Alterações" : "Publicar Videoaula"}
               </Button>
