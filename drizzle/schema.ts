@@ -1,4 +1,4 @@
-import { boolean, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { boolean, int, mysqlEnum, mysqlTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
 
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(), studentCode: varchar("studentCode", { length: 20 }).notNull().unique(), name: varchar("name", { length: 191 }).notNull(), passwordHash: text("passwordHash").notNull(), role: mysqlEnum("role", ["user", "teacher", "admin", "superadmin"]).default("user").notNull(), isGeneralAdmin: boolean("isGeneralAdmin").default(false).notNull(), openId: varchar("openId", { length: 64 }).notNull().unique(), email: varchar("email", { length: 320 }), schoolYear: varchar("schoolYear", { length: 32 }), className: varchar("className", { length: 32 }), shift: varchar("shift", { length: 32 }), loginMethod: varchar("loginMethod", { length: 64 }).default("credentials").notNull(), createdAt: timestamp("createdAt").defaultNow().notNull(), updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(), lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -14,7 +14,7 @@ export type InsertVideo = typeof videos.$inferInsert;
 export const suggestions = mysqlTable("suggestions", { id: int("id").autoincrement().primaryKey(), userId: int("userId").notNull(), studentCode: varchar("studentCode", { length: 20 }).notNull(), studentName: varchar("studentName", { length: 191 }).notNull(), title: varchar("title", { length: 255 }).notNull(), description: text("description").notNull(), subject: varchar("subject", { length: 64 }).notNull(), status: mysqlEnum("status", ["pending", "reviewed"]).default("pending").notNull(), reviewedAt: timestamp("reviewedAt"), reviewedById: int("reviewedById"), createdAt: timestamp("createdAt").defaultNow().notNull(), updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull() });
 export type Suggestion = typeof suggestions.$inferSelect;
 export type InsertSuggestion = typeof suggestions.$inferInsert;
-export const watchedVideos = mysqlTable("watched_videos", { id: int("id").autoincrement().primaryKey(), userId: int("userId").notNull(), videoId: int("videoId").notNull(), watchedAt: timestamp("watchedAt").defaultNow().notNull() });
+export const watchedVideos = mysqlTable("watched_videos", { id: int("id").autoincrement().primaryKey(), userId: int("userId").notNull(), videoId: int("videoId").notNull(), watchedAt: timestamp("watchedAt").defaultNow().notNull() }, table => ({ userVideoUnique: uniqueIndex("watched_videos_user_video_unique").on(table.userId, table.videoId) }));
 export type WatchedVideo = typeof watchedVideos.$inferSelect;
 export type InsertWatchedVideo = typeof watchedVideos.$inferInsert;
 
@@ -38,3 +38,59 @@ export type ClassContentCompletion = typeof classContentCompletions.$inferSelect
 export type InsertCompletion = typeof classContentCompletions.$inferInsert;
 export type Role = User["role"];
 export type ClassContentType = ClassContent["type"];
+
+export const studentStats = mysqlTable("student_stats", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  xp: int("xp").default(0).notNull(),
+  level: int("level").default(1).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type StudentStats = typeof studentStats.$inferSelect;
+
+export const achievements = mysqlTable("achievements", {
+  id: int("id").autoincrement().primaryKey(),
+  slug: varchar("slug", { length: 80 }).notNull().unique(),
+  name: varchar("name", { length: 120 }).notNull(),
+  description: text("description").notNull(),
+  requirementType: mysqlEnum("requirementType", ["lessons", "level"]).notNull(),
+  threshold: int("threshold").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type Achievement = typeof achievements.$inferSelect;
+
+export const userAchievements = mysqlTable("user_achievements", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  achievementId: int("achievementId").notNull(),
+  unlockedAt: timestamp("unlockedAt").defaultNow().notNull(),
+}, table => ({ userAchievementUnique: uniqueIndex("user_achievements_user_achievement_unique").on(table.userId, table.achievementId) }));
+export type UserAchievement = typeof userAchievements.$inferSelect;
+
+export const dailyChallenges = mysqlTable("daily_challenges", {
+  id: int("id").autoincrement().primaryKey(),
+  question: text("question").notNull(),
+  optionA: varchar("optionA", { length: 500 }).notNull(),
+  optionB: varchar("optionB", { length: 500 }).notNull(),
+  optionC: varchar("optionC", { length: 500 }).notNull(),
+  optionD: varchar("optionD", { length: 500 }).notNull(),
+  correctOption: int("correctOption").notNull(),
+  challengeDate: varchar("challengeDate", { length: 10 }).notNull().unique(),
+  active: boolean("active").default(true).notNull(),
+  createdById: int("createdById").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type DailyChallenge = typeof dailyChallenges.$inferSelect;
+
+export const challengeAnswers = mysqlTable("challenge_answers", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  challengeId: int("challengeId").notNull(),
+  selectedOption: int("selectedOption").notNull(),
+  isCorrect: boolean("isCorrect").notNull(),
+  xpAwarded: int("xpAwarded").default(0).notNull(),
+  answeredAt: timestamp("answeredAt").defaultNow().notNull(),
+}, table => ({ challengeAnswerUnique: uniqueIndex("challenge_answers_user_challenge_unique").on(table.userId, table.challengeId) }));
+export type ChallengeAnswer = typeof challengeAnswers.$inferSelect;

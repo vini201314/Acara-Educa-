@@ -29,6 +29,20 @@
       "when": 1790038050160,
       "tag": "0003_striped_monster_badoon",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1790258075595,
+      "tag": "0004_military_wendigo",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1790258368469,
+      "tag": "0005_last_old_lace",
+      "breakpoints": true
     }
   ]
 }

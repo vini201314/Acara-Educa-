@@ -16,6 +16,7 @@ import * as db from "./db";
 import { verifyPassword } from "./password";
 import { storageGetSignedUrl, storagePut } from "./storage";
 import { classroomRouter } from "./classroomRouter";
+import * as gamification from "./gamificationDb";
 
 function getRegistrationErrorMessage(error: unknown): string {
   const raw = error instanceof Error ? error.message : String(error);
@@ -63,6 +64,7 @@ export const appRouter = router({
       if (!freshUser) return null;
 
       const watchedCount = await db.countWatchedVideosByUser(freshUser.id);
+      const gamificationProfile = await gamification.getGamificationProfile(freshUser.id);
 
       return {
         id: freshUser.id,
@@ -73,6 +75,7 @@ export const appRouter = router({
         isGeneralAdmin: freshUser.isGeneralAdmin,
         createdAt: freshUser.createdAt,
         watchedCount,
+        ...gamificationProfile,
       };
     }),
 
@@ -270,13 +273,26 @@ export const appRouter = router({
     markWatched: protectedProcedure
       .input(z.object({ videoId: z.number() }))
       .mutation(async ({ input, ctx }) => {
-        await db.recordWatchedVideo(ctx.user.id, input.videoId);
-        const watchedCount = await db.countWatchedVideosByUser(ctx.user.id);
+        const result = await gamification.recordLessonCompletion(ctx.user.id, input.videoId);
         return {
           success: true,
-          watchedCount,
+          watchedCount: result.lessonsCompleted,
+          firstCompletion: result.firstCompletion,
+          xpAward: result.xpAward,
+          level: result.level,
+          rank: result.rank,
+          leveledUp: result.leveledUp ?? false,
+          unlockedAchievements: result.unlockedAchievements ?? [],
         };
       }),
+  }),
+
+  gamification: router({
+    profile: protectedProcedure.query(({ ctx }) => gamification.getGamificationProfile(ctx.user.id)),
+    todayChallenge: protectedProcedure.query(({ ctx }) => gamification.getTodayChallenge(ctx.user.id)),
+    answerChallenge: protectedProcedure
+      .input(z.object({ challengeId: z.number(), selectedOption: z.number().int().min(0).max(3) }))
+      .mutation(({ input, ctx }) => gamification.answerTodayChallenge(ctx.user.id, input.challengeId, input.selectedOption)),
   }),
 
   // ----------------- SUGESTÕES DOS ALUNOS -----------------
@@ -458,6 +474,33 @@ export const appRouter = router({
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         await db.deleteSuggestion(input.id);
+        return { success: true };
+      }),
+
+    // Gestão do Desafio do Dia
+    listChallenges: adminProcedure.query(() => gamification.listChallenges()),
+    createChallenge: adminProcedure
+      .input(z.object({
+        question: z.string().min(5),
+        options: z.array(z.string().min(1)).length(4),
+        correctOption: z.number().int().min(0).max(3),
+        challengeDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      }))
+      .mutation(({ input, ctx }) => gamification.createChallenge({ ...input, createdById: ctx.user.id })),
+    updateChallenge: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        question: z.string().min(5),
+        options: z.array(z.string().min(1)).length(4),
+        correctOption: z.number().int().min(0).max(3),
+        challengeDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        active: z.boolean(),
+      }))
+      .mutation(({ input }) => gamification.updateChallenge(input.id, input)),
+    deleteChallenge: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await gamification.deleteChallenge(input.id);
         return { success: true };
       }),
 

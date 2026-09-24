@@ -1,0 +1,1 @@
+ALTER TABLE `watched_videos` ADD CONSTRAINT `watched_videos_user_video_unique` UNIQUE(`userId`,`videoId`);

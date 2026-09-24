@@ -38,6 +38,7 @@ import {
   Clock,
   Sparkles,
   Users,
+  Brain,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -56,7 +57,7 @@ export default function AdminDashboard() {
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
 
-  const [activeTab, setActiveTab] = useState<"videos" | "suggestions" | "admins">("videos");
+  const [activeTab, setActiveTab] = useState<"videos" | "suggestions" | "challenges" | "admins">("videos");
 
   // Estado para Modal de Vídeo (Adicionar / Editar)
   const [videoModalOpen, setVideoModalOpen] = useState(false);
@@ -76,6 +77,14 @@ export default function AdminDashboard() {
   const [newAdminCode, setNewAdminCode] = useState("");
   const [newAdminRole, setNewAdminRole] = useState<"admin" | "teacher">("admin");
 
+  // Estado para o Desafio do Dia
+  const [challengeId, setChallengeId] = useState<number | null>(null);
+  const [challengeQuestion, setChallengeQuestion] = useState("");
+  const [challengeOptions, setChallengeOptions] = useState(["", "", "", ""]);
+  const [challengeCorrect, setChallengeCorrect] = useState(0);
+  const [challengeDate, setChallengeDate] = useState(new Date().toISOString().slice(0, 10));
+  const [challengeActive, setChallengeActive] = useState(true);
+
   // Queries
   const { data: user, isLoading: loadingAuth } = trpc.auth.me.useQuery();
   const { data: stats, isLoading: loadingStats } = trpc.admin.stats.useQuery(undefined, {
@@ -87,6 +96,9 @@ export default function AdminDashboard() {
     { enabled: !!user && (user.role === "admin" || user.role === "superadmin") }
   );
   const { data: admins, isLoading: loadingAdmins } = trpc.admin.listAdmins.useQuery(undefined, {
+    enabled: !!user && (user.role === "admin" || user.role === "superadmin"),
+  });
+  const { data: challenges, isLoading: loadingChallenges } = trpc.admin.listChallenges.useQuery(undefined, {
     enabled: !!user && (user.role === "admin" || user.role === "superadmin"),
   });
 
@@ -158,6 +170,28 @@ export default function AdminDashboard() {
     },
     onError: err => toast.error(err.message || "Erro ao remover permissão."),
   });
+
+  const createChallengeMutation = trpc.admin.createChallenge.useMutation({
+    onSuccess: () => { utils.admin.listChallenges.invalidate(); resetChallengeForm(); toast.success("Desafio publicado com sucesso!"); },
+    onError: err => toast.error(err.message || "Erro ao publicar desafio."),
+  });
+  const updateChallengeMutation = trpc.admin.updateChallenge.useMutation({
+    onSuccess: () => { utils.admin.listChallenges.invalidate(); resetChallengeForm(); toast.success("Desafio atualizado!"); },
+    onError: err => toast.error(err.message || "Erro ao atualizar desafio."),
+  });
+  const deleteChallengeMutation = trpc.admin.deleteChallenge.useMutation({
+    onSuccess: () => { utils.admin.listChallenges.invalidate(); toast.success("Desafio excluído."); },
+    onError: err => toast.error(err.message || "Erro ao excluir desafio."),
+  });
+
+  function resetChallengeForm() {
+    setChallengeId(null);
+    setChallengeQuestion("");
+    setChallengeOptions(["", "", "", ""]);
+    setChallengeCorrect(0);
+    setChallengeDate(new Date().toISOString().slice(0, 10));
+    setChallengeActive(true);
+  }
 
   // Funções Auxiliares de Modal
   const openNewVideoModal = () => {
@@ -471,6 +505,18 @@ export default function AdminDashboard() {
               <UserCheck className="w-4 h-4" />
               Administradores ({admins?.length || 0})
             </button>
+
+            <button
+              onClick={() => setActiveTab("challenges")}
+              className={`pb-3 px-2 font-bold text-sm border-b-2 flex items-center gap-2 transition-colors ${
+                activeTab === "challenges"
+                  ? "border-emerald-600 text-emerald-700"
+                  : "border-transparent text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <Brain className="w-4 h-4" />
+              Desafios ({challenges?.length || 0})
+            </button>
           </div>
 
           {/* CONTEÚDO DA ABA: VÍDEOS */}
@@ -679,6 +725,27 @@ export default function AdminDashboard() {
                   <p className="text-slate-600 font-bold">Nenhuma sugestão enviada até o momento.</p>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* CONTEÚDO DA ABA: DESAFIOS */}
+          {activeTab === "challenges" && (
+            <div className="space-y-6">
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-indigo-100 shadow-xs">
+                <div className="flex items-start justify-between gap-3 mb-5">
+                  <div><h2 className="text-xl font-bold text-slate-900 flex items-center gap-2"><Brain className="w-5 h-5 text-indigo-600" /> {challengeId ? "Editar Desafio do Dia" : "Criar Desafio do Dia"}</h2><p className="text-sm text-slate-500 mt-1">Publique uma questão com quatro alternativas e defina a resposta correta.</p></div>
+                  {challengeId && <Button type="button" variant="outline" onClick={resetChallengeForm} className="rounded-xl">Novo desafio</Button>}
+                </div>
+                <form onSubmit={event => { event.preventDefault(); const payload = { question: challengeQuestion.trim(), options: challengeOptions.map(option => option.trim()), correctOption: challengeCorrect, challengeDate }; if (challengeId) updateChallengeMutation.mutate({ id: challengeId, ...payload, active: challengeActive }); else createChallengeMutation.mutate(payload); }} className="space-y-4">
+                  <div><Label>Pergunta</Label><Textarea value={challengeQuestion} onChange={event => setChallengeQuestion(event.target.value)} placeholder="Digite a questão do desafio..." className="mt-1 min-h-24 rounded-xl" required /></div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{challengeOptions.map((option, index) => <div key={index}><Label>Alternativa {String.fromCharCode(65 + index)}</Label><Input value={option} onChange={event => setChallengeOptions(current => current.map((item, itemIndex) => itemIndex === index ? event.target.value : item))} className="mt-1 h-11 rounded-xl" required /></div>)}</div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><div><Label>Resposta correta</Label><select value={challengeCorrect} onChange={event => setChallengeCorrect(Number(event.target.value))} className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"><option value={0}>A</option><option value={1}>B</option><option value={2}>C</option><option value={3}>D</option></select></div><div><Label>Data do desafio</Label><Input type="date" value={challengeDate} onChange={event => setChallengeDate(event.target.value)} className="mt-1 h-11 rounded-xl" required /></div></div>
+                  {challengeId && <label className="flex items-center gap-2 text-sm text-slate-700"><input type="checkbox" checked={challengeActive} onChange={event => setChallengeActive(event.target.checked)} /> Desafio ativo para os alunos</label>}
+                  <Button type="submit" disabled={createChallengeMutation.isPending || updateChallengeMutation.isPending} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl">{challengeId ? "Salvar alterações" : "Publicar desafio"}</Button>
+                </form>
+              </div>
+
+              <div className="space-y-3"><h2 className="text-xl font-bold text-slate-900">Desafios publicados</h2>{loadingChallenges ? <div className="h-24 rounded-2xl bg-white animate-pulse" /> : challenges && challenges.length > 0 ? challenges.map(challenge => <div key={challenge.id} className="bg-white rounded-2xl border border-slate-200 p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="bg-indigo-100 text-indigo-800 text-xs font-bold px-2.5 py-1 rounded-lg">{challenge.challengeDate}</span><span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${challenge.active ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"}`}>{challenge.active ? "Ativo" : "Inativo"}</span></div><p className="font-bold text-slate-900 mt-2">{challenge.question}</p><p className="text-xs text-slate-500 mt-1 line-clamp-1">A) {challenge.optionA} · B) {challenge.optionB} · C) {challenge.optionC} · D) {challenge.optionD}</p></div><div className="flex items-center gap-2 self-end lg:self-center shrink-0"><Button variant="outline" size="sm" className="rounded-xl" onClick={() => { setChallengeId(challenge.id); setChallengeQuestion(challenge.question); setChallengeOptions([challenge.optionA, challenge.optionB, challenge.optionC, challenge.optionD]); setChallengeCorrect(challenge.correctOption); setChallengeDate(challenge.challengeDate); setChallengeActive(challenge.active); }}> <Edit className="w-4 h-4 mr-1.5" /> Editar</Button><Button variant="ghost" size="sm" className="text-rose-600 hover:bg-rose-50 rounded-xl" onClick={() => { if (confirm("Deseja realmente excluir este desafio?")) deleteChallengeMutation.mutate({ id: challenge.id }); }}><Trash2 className="w-4 h-4" /></Button></div></div>) : <div className="text-center py-12 bg-white rounded-3xl border border-dashed border-slate-200"><Brain className="w-10 h-10 text-slate-300 mx-auto mb-3" /><p className="text-slate-600 font-bold">Nenhum desafio publicado ainda.</p></div>}</div>
             </div>
           )}
 

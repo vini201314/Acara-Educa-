@@ -315,9 +315,9 @@ export async function deleteVideo(id: number): Promise<void> {
 
 // ----------------- VÍDEOS ASSISTIDOS -----------------
 
-export async function recordWatchedVideo(userId: number, videoId: number): Promise<void> {
+export async function recordWatchedVideo(userId: number, videoId: number): Promise<boolean> {
   const db = await getDb();
-  if (!db) return;
+  if (!db) return false;
 
   const existing = await db
     .select()
@@ -327,11 +327,13 @@ export async function recordWatchedVideo(userId: number, videoId: number): Promi
 
   if (existing.length === 0) {
     await db.insert(watchedVideos).values({ userId, videoId });
+    return true;
   } else {
     await db
       .update(watchedVideos)
       .set({ watchedAt: new Date() })
       .where(eq(watchedVideos.id, existing[0].id));
+    return false;
   }
 }
 

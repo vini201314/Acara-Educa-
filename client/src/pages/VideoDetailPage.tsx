@@ -30,11 +30,13 @@ export default function VideoDetailPage() {
   );
 
   const markWatchedMutation = trpc.videos.markWatched.useMutation({
-    onSuccess: () => {
+    onSuccess: result => {
       utils.videos.getById.invalidate({ id: videoId });
       utils.videos.list.invalidate();
       utils.auth.me.invalidate();
-      toast.success("Vídeo registrado como assistido!");
+      utils.gamification.profile.invalidate();
+      if (result.firstCompletion) toast.success(`Vídeo registrado como assistido! +${result.xpAward} XP`);
+      if (result.leveledUp) toast.success(`Você subiu para o nível ${result.level}! Patente: ${result.rank}`);
     },
     onError: err => {
       toast.error(err.message || "Erro ao registrar visualização.");

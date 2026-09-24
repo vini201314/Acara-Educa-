@@ -15,11 +15,14 @@ import {
   CheckCircle2,
   Users,
   Search,
+  Trophy,
+  Brain,
 } from "lucide-react";
 
 export default function Home() {
   const { data: user } = trpc.auth.me.useQuery();
   const { data: videos, isLoading: loadingVideos } = trpc.videos.list.useQuery();
+  const { data: gamification } = trpc.gamification.profile.useQuery(undefined, { enabled: !!user });
 
   const recentVideos = videos ? videos.slice(0, 4) : [];
 
@@ -64,6 +67,19 @@ export default function Home() {
               </div>
             </div>
           </div>
+        )}
+
+        {user && gamification && (
+          <section className="bg-white border-b border-emerald-100 py-4 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-[1fr_auto] items-center gap-4">
+              <div>
+                <div className="flex flex-wrap items-center gap-2 text-sm"><Trophy className="w-4 h-4 text-amber-500" /><span className="font-black text-slate-900">Nível {gamification.level}</span><span className="text-slate-400">•</span><span className="font-bold text-emerald-700">{gamification.rank}</span><span className="text-slate-500">• {gamification.xp} XP</span></div>
+                <div className="mt-2 h-2.5 rounded-full bg-slate-100 overflow-hidden max-w-2xl"><div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-amber-400" style={{ width: `${Math.min(100, gamification.xpIntoLevel)}%` }} /></div>
+                <p className="mt-1 text-[11px] text-slate-500">{gamification.xpIntoLevel}/100 XP para o próximo nível · {gamification.lessonsCompleted} aulas concluídas de {gamification.totalLessons}</p>
+              </div>
+              <Link href="/perfil"><Button variant="outline" size="sm" className="rounded-xl border-emerald-200 text-emerald-700"><Brain className="w-4 h-4 mr-1.5" /> Ver desafios e conquistas</Button></Link>
+            </div>
+          </section>
         )}
 
         {/* HERO SECTION */}
