@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   Info,
+  Award,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -44,6 +45,7 @@ export default function Navbar() {
     { href: "/classes", label: "Minhas Classes", icon: GraduationCap },
     { href: "/sugestoes", label: "Sugestões", icon: Lightbulb },
     { href: "/sobre", label: "Sobre o Projeto", icon: Info },
+    { href: "/creditos", label: "Créditos", icon: Award },
   ];
 
   const isCurrent = (path: string) => {

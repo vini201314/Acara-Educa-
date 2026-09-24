@@ -12,6 +12,7 @@ import VideoDetailPage from "./pages/VideoDetailPage";
 import SuggestionsPage from "./pages/SuggestionsPage";
 import ProfilePage from "./pages/ProfilePage";
 import AboutPage from "./pages/AboutPage";
+import CreditsPage from "./pages/CreditsPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import ClassroomPage from "./pages/ClassroomPage";
@@ -40,6 +41,9 @@ function Router() {
 
       {/* Sobre o Projeto */}
       <Route path="/sobre" component={AboutPage} />
+
+      {/* Créditos da Plataforma */}
+      <Route path="/creditos" component={CreditsPage} />
 
       {/* Painel Administrativo */}
       <Route path="/admin" component={AdminDashboard} />
