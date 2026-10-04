@@ -32,7 +32,6 @@ export async function getDb() {
 
 export const GENERAL_ADMIN = {
   name: "Paulo Vinicius do Nascimento Santos",
-  initialPassword: "vini2013.",
 };
 
 export async function ensureGeneralAdmin(): Promise<User | null> {
@@ -62,8 +61,13 @@ export async function ensureGeneralAdmin(): Promise<User | null> {
   }
 
   // Obter próximo ID numérico para o código do aluno
+  const initialPassword = process.env.INITIAL_ADMIN_PASSWORD;
+  if (!initialPassword) {
+    throw new Error("INITIAL_ADMIN_PASSWORD is required to bootstrap the general administrator");
+  }
+
   const nextCode = await getNextStudentCode();
-  const passwordHash = hashPassword(GENERAL_ADMIN.initialPassword);
+  const passwordHash = hashPassword(initialPassword);
   const openId = `usr_${Date.now()}_001`;
 
   await db.insert(users).values({

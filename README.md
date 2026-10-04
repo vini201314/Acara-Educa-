@@ -29,8 +29,7 @@
   - Remoção de privilégios de administradores comuns.
   - Proteção de segurança: o Administrador Geral não pode remover a própria permissão.
 - **Administrador Geral Inicial**:
-  - **Nome**: `Paulo Vinicius do Nascimento Santos`
-  - **Senha inicial**: `vini2013.` (armazenada com hash scrypt e nunca visível).
+  - A conta inicial é configurada no backend usando `INITIAL_ADMIN_PASSWORD`; credenciais reais não são documentadas nem versionadas.
 
 ---
 
@@ -63,6 +62,7 @@
    ```env
    DATABASE_URL=mysql://usuario:senha@host:porta/banco
    JWT_SECRET=seu_segredo_jwt_aqui
+   INITIAL_ADMIN_PASSWORD=defina-uma-senha-forte-no-vercel
    ```
 
 3. **Gere e aplique as migrações do banco**:

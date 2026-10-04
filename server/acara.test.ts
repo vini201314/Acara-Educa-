@@ -13,7 +13,7 @@ describe("Segurança e Utilitários de Aluno", () => {
   });
 
   it("deve gerar hash seguro e verificar senhas corretamente", () => {
-    const raw = "vini2013.";
+    const raw = "test-password-only-2026";
     const hashed = hashPassword(raw);
     expect(hashed).toContain(":");
     expect(hashed).not.toBe(raw);
